@@ -3,7 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type UserRole = "farmer" | "seller" | "government"
+export type UserRole = "farmer" | "seller" | "government" | "admin"
 
 export interface User {
   id: string
@@ -33,6 +33,7 @@ interface AppState {
   setUser: (user: User | null) => void
   setRole: (role: UserRole) => void
   setIsAuthenticated: (auth: boolean) => void
+  loginAsAdmin: () => void   // ✅ NEW
   logout: () => void
 
   addNotification: (
@@ -48,43 +49,26 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      user: {
-        id: "1",
-        name: "Demo User",
-        email: "demo@smartagri.com",
-        role: "seller",
-        location: "Maharashtra, India",
-      },
+      user: null,
 
       role: "seller",
       isAuthenticated: false,
 
-      notifications: [
-        {
-          id: "1",
-          title: "New Crop Listed",
-          message: "A farmer near you listed fresh tomatoes",
-          type: "info",
-          read: false,
-          createdAt: new Date(),
-        },
-        {
-          id: "2",
-          title: "Price Alert",
-          message: "Wheat prices dropped by 5% in your region",
-          type: "warning",
-          read: false,
-          createdAt: new Date(),
-        },
-        {
-          id: "3",
-          title: "Order Completed",
-          message: "Your order #1234 has been delivered",
-          type: "success",
-          read: true,
-          createdAt: new Date(),
-        },
-      ],
+      // ✅ ADMIN LOGIN FUNCTION
+      loginAsAdmin: () =>
+        set({
+          role: "admin",
+          isAuthenticated: true,
+          user: {
+            id: "999",
+            name: "Admin User",
+            email: "admin@smartagri.com",
+            role: "admin",
+            location: "India",
+          },
+        }),
+
+      notifications: [],
 
       sidebarOpen: true,
 
@@ -98,7 +82,7 @@ export const useAppStore = create<AppState>()(
             name: "Demo User",
             email: "demo@smartagri.com",
             role,
-            location: "Maharashtra, India",
+            location: "India",
           },
         }),
 
@@ -108,6 +92,7 @@ export const useAppStore = create<AppState>()(
         set({
           user: null,
           isAuthenticated: false,
+          role: "seller",
         }),
 
       addNotification: (notification) =>

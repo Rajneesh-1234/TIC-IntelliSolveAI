@@ -72,7 +72,23 @@ const roles = [
       "Farmer welfare tracking",
       "Policy implementation"
     ]
-  }
+  },
+  {
+  id: "admin" as UserRole,
+  icon: Building2,
+  title: "Admin",
+  description: "I manage the platform",
+  color: "from-red-500 to-pink-600",
+  bgColor: "bg-red-500/10",
+  borderColor: "border-red-500/50",
+  textColor: "text-red-600 dark:text-red-400",
+  benefits: [
+    "Manage all users",
+    "Approve farmer listings",
+    "Monitor transactions",
+    "Platform analytics & control"
+  ]
+}
 ]
 
 const states = [
