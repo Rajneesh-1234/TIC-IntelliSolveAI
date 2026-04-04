@@ -1,270 +1,485 @@
 "use client"
 
-import { Sprout, IndianRupee, Package, TrendingUp, Plus, Eye, ArrowRight } from "lucide-react"
+import { useEffect, useState } from "react"
+import {
+  Sprout,
+  IndianRupee,
+  Package,
+  TrendingUp,
+  Plus,
+  Eye,
+  ArrowRight
+} from "lucide-react"
 import Link from "next/link"
+
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   Line,
   LineChart,
   XAxis,
   YAxis,
-  CartesianGrid,
+  CartesianGrid
 } from "recharts"
 
 import { KPICard } from "@/components/kpi-card"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { priceHistory } from "@/lib/mock-data"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart"
+
 import LogoutButton from "../Logout/page"
 
+// ✅ SAFE CONFIG (IMPORTANT FIX)
 const chartConfig = {
   revenue: { label: "Revenue", color: "var(--chart-1)" },
-  orders: { label: "Orders", color: "var(--chart-2)" },
   tomatoes: { label: "Tomatoes", color: "var(--chart-1)" },
-  rice: { label: "Rice", color: "var(--chart-2)" },
-  wheat: { label: "Wheat", color: "var(--chart-3)" },
   onions: { label: "Onions", color: "var(--chart-4)" },
 }
 
-const revenueData = [
-  { month: "Oct", revenue: 45000 },
-  { month: "Nov", revenue: 52000 },
-  { month: "Dec", revenue: 48000 },
-  { month: "Jan", revenue: 61000 },
-  { month: "Feb", revenue: 55000 },
-  { month: "Mar", revenue: 72000 },
-]
-
-const activeListings = [
-  { id: 1, name: "Organic Tomatoes", quantity: 500, unit: "kg", price: 45, views: 128, offers: 5 },
-  { id: 2, name: "Fresh Onions", quantity: 800, unit: "kg", price: 30, views: 95, offers: 3 },
-  { id: 3, name: "Basmati Rice", quantity: 2000, unit: "kg", price: 85, views: 234, offers: 8 },
-]
-
-const recentOrders = [
-  { id: "ORD-001", buyer: "Krishna Traders", crop: "Tomatoes", quantity: 100, status: "completed", amount: 4500 },
-  { id: "ORD-002", buyer: "Patel Mills", crop: "Rice", quantity: 500, status: "processing", amount: 42500 },
-  { id: "ORD-003", buyer: "Green Mart", crop: "Onions", quantity: 200, status: "pending", amount: 6000 },
-]
-
-const statusColors: Record<string, string> = {
-  pending: "bg-warning/20 text-warning border-warning/30",
-  processing: "bg-secondary/20 text-secondary border-secondary/30",
-  completed: "bg-success/20 text-success border-success/30",
-}
-
 export default function FarmerDashboard() {
+
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // ✅ API CALL
+  useEffect(() => {
+    fetch("http://localhost:7000/api/dashboard/1") // 👈 change farmerId
+      .then(res => res.json())
+      .then(res => {
+        console.log("API DATA:", res)
+        setData(res)
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <p className="p-6">Loading...</p>
+
+  // ✅ SAFE FALLBACKS
+  const revenueData = data?.revenueOverview || []
+  const marketPrices = data?.marketPrices || []
+  const listings = data?.activeListingsData || []
+  const orders = data?.recentOrders || []
+
+  const statusColors: any = {
+    pending: "bg-warning/20 text-warning border-warning/30",
+    processing: "bg-secondary/20 text-secondary border-secondary/30",
+    completed: "bg-success/20 text-success border-success/30",
+  }
+
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+      {/* HEADER */}
+      <div className="flex justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Farmer Dashboard</h1>
+          <h1 className="text-3xl font-bold">Farmer Dashboard</h1>
           <p className="text-muted-foreground">
-            Manage your crops, track orders, and grow your business.
+            Manage your crops & orders
           </p>
         </div>
-     <div className="flex gap-2">
-  <Button asChild>
-    <Link href="/farmer/listings">
-      <Plus className="size-4 mr-2" />
-      Add New Listing
-    </Link>
-  </Button>
 
-  <LogoutButton />
-</div>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link href="/farmer/listings">
+              <Plus className="size-4 mr-2" />
+              Add Listing
+            </Link>
+          </Button>
+
+          <LogoutButton />
+        </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
         <KPICard
           title="Total Revenue"
-          value="₹3,33,000"
-          change={18.2}
-          icon={<IndianRupee className="size-full" />}
-          variant="primary"
+          value={`₹${data?.totalRevenue ?? 0}`}
+          icon={<IndianRupee />}
         />
+
         <KPICard
           title="Active Listings"
-          value="12"
-          change={4}
-          changeLabel="new this week"
-          icon={<Sprout className="size-full" />}
+          value={data?.activeListings ?? 0}
+          icon={<Sprout />}
         />
+
         <KPICard
           title="Pending Orders"
-          value="8"
-          change={-2}
-          icon={<Package className="size-full" />}
-          variant="warning"
+          value={data?.pendingOrders ?? 0}
+          icon={<Package />}
         />
+
         <KPICard
-          title="Avg. Price/kg"
-          value="₹52"
-          change={6.5}
-          icon={<TrendingUp className="size-full" />}
-          variant="success"
+          title="Avg Price/kg"
+          value={`₹${data?.avgPrice ?? 0}`}
+          icon={<TrendingUp />}
         />
+
       </div>
 
-      {/* Charts Row */}
+      {/* CHARTS */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Revenue Chart */}
+
+        {/* Revenue */}
         <Card>
           <CardHeader>
             <CardTitle>Revenue Overview</CardTitle>
-            <CardDescription>Your earnings over the last 6 months</CardDescription>
           </CardHeader>
+
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" tickLine={false} axisLine={false} />
-                <YAxis className="text-xs" tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v/1000}k`} />
+            <ChartContainer config={chartConfig || {}} className="h-[300px]">
+              <AreaChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <Area
                   type="monotone"
                   dataKey="revenue"
-                  stroke="var(--chart-1)"
-                  strokeWidth={2}
-                  fill="url(#revenueGradient)"
+                  stroke="green"
+                  fillOpacity={0.2}
                 />
               </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Price Trends */}
+        {/* Market Prices */}
         <Card>
           <CardHeader>
             <CardTitle>Market Prices</CardTitle>
-            <CardDescription>Current price trends for your crops</CardDescription>
           </CardHeader>
+
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <LineChart data={priceHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" tickLine={false} axisLine={false} />
-                <YAxis className="text-xs" tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}`} />
+            <ChartContainer config={chartConfig || {}} className="h-[300px]">
+              <LineChart data={marketPrices}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="tomatoes" stroke="var(--chart-1)" strokeWidth={2} dot={{ fill: "var(--chart-1)", r: 4 }} />
-                <Line type="monotone" dataKey="onions" stroke="var(--chart-4)" strokeWidth={2} dot={{ fill: "var(--chart-4)", r: 4 }} />
+                <Line dataKey="tomatoes" stroke="green" />
+                <Line dataKey="onions" stroke="orange" />
               </LineChart>
             </ChartContainer>
           </CardContent>
         </Card>
+
       </div>
 
-      {/* Active Listings */}
+      {/* LISTINGS */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Active Listings</CardTitle>
-              <CardDescription>Your current crop listings</CardDescription>
-            </div>
-            <Button variant="outline" asChild>
-              <Link href="/farmer/listings">View All</Link>
-            </Button>
-          </div>
+          <CardTitle>Active Listings</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {activeListings.map((listing) => (
-              <div
-                key={listing.id}
-                className="flex flex-col gap-3 p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-semibold">{listing.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {listing.quantity} {listing.unit} available
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold">₹{listing.price}</div>
-                    <div className="text-xs text-muted-foreground">per {listing.unit}</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <Eye className="size-3.5" />
-                      {listing.views}
-                    </span>
-                    <span>{listing.offers} offers</span>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Manage
-                  </Button>
-                </div>
+
+        <CardContent className="grid gap-4 md:grid-cols-3">
+
+          {listings.map((l: any) => (
+            <div key={l.id} className="border p-4 rounded">
+
+              <h3 className="font-semibold">{l.name}</h3>
+              <p>{l.quantity} {l.unit}</p>
+
+              <p className="font-bold">₹{l.price}</p>
+
+              <div className="flex justify-between text-sm mt-2">
+                <span className="flex items-center gap-1">
+                  <Eye size={14}/> {l.views}
+                </span>
+                <span>{l.offers} offers</span>
               </div>
-            ))}
-          </div>
+
+            </div>
+          ))}
+
         </CardContent>
       </Card>
 
-      {/* Recent Orders */}
+      {/* ORDERS */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Latest orders from buyers</CardDescription>
-            </div>
-            <Button variant="outline" asChild>
-              <Link href="/farmer/orders">
-                View All
-                <ArrowRight className="size-4 ml-2" />
-              </Link>
-            </Button>
-          </div>
+          <CardTitle>Recent Orders</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center justify-between p-4 rounded-lg border"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Package className="size-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{order.buyer}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {order.crop} • {order.quantity} kg
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Badge variant="outline" className={statusColors[order.status]}>
-                    {order.status}
-                  </Badge>
-                  <div className="text-right">
-                    <div className="font-semibold">₹{order.amount.toLocaleString()}</div>
-                    <div className="text-xs text-muted-foreground">{order.id}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+
+        <CardContent className="space-y-4">
+
+        {orders.map((o: any) => (
+  <div key={o.id} className="flex justify-between border p-4 rounded">
+
+    <div>
+      <p className="font-medium">{o.buyerName}</p>
+      <p className="text-sm">
+        {o.cropName} • {o.quantity} kg
+      </p>
+    </div>
+
+    <div className="text-right">
+      <Badge className={statusColors[o.status]}>
+        {o.status}
+      </Badge>
+      <p className="font-semibold">₹{o.total}</p>
+    </div>
+
+  </div>
+))}
+
         </CardContent>
       </Card>
+
     </div>
   )
 }
+
+
+
+
+
+
+
+
+// // OLD CODE SNIPPETS FROM OTHER PAGES (FOR REFERENCE ONLY, DO NOT COPY)
+
+// "use client"
+
+// import { useEffect, useState } from "react"
+// import {
+//   Sprout,
+//   IndianRupee,
+//   Package,
+//   TrendingUp,
+//   Plus,
+//   Eye
+// } from "lucide-react"
+// import Link from "next/link"
+
+// import {
+//   Area,
+//   AreaChart,
+//   Line,
+//   LineChart,
+//   XAxis,
+//   YAxis,
+//   CartesianGrid
+// } from "recharts"
+
+// import { KPICard } from "@/components/kpi-card"
+// import {
+//   Card,
+//   CardContent,
+//   CardHeader,
+//   CardTitle
+// } from "@/components/ui/card"
+// import { Button } from "@/components/ui/button"
+// import { Badge } from "@/components/ui/badge"
+// import {
+//   ChartContainer,
+//   ChartTooltip,
+//   ChartTooltipContent
+// } from "@/components/ui/chart"
+
+// import LogoutButton from "../Logout/page"
+
+// const chartConfig = {
+//   revenue: { label: "Revenue", color: "var(--chart-1)" },
+//   crop1: { label: "Crop1", color: "var(--chart-1)" },
+//   crop2: { label: "Crop2", color: "var(--chart-4)" },
+// }
+
+// export default function FarmerDashboard() {
+
+//   const [data, setData] = useState<any>(null)
+//   const [loading, setLoading] = useState(true)
+
+// useEffect(() => {
+//   const token = localStorage.getItem("token")
+
+//   fetch("http://localhost:7000/api/dashboard/1", {
+//     headers: {
+//       Authorization: `Bearer ${token}`   // ✅ FIX
+//     }
+//   })
+//     .then(res => res.json())
+//     .then(res => {
+//       console.log("API DATA:", res)
+//       setData(res)
+//     })
+//     .catch(err => console.error(err))
+//     .finally(() => setLoading(false))
+// }, [])
+
+//   if (loading) return <p className="p-6">Loading...</p>
+//   if (!data) return <p>No data found</p>
+
+//   // ✅ FIXED MAPPING
+//   const revenueData = data.revenueOverview.map((item: any) => ({
+//     month: item.month,
+//     revenue: item.amount
+//   }))
+
+//   const marketPrices = data.marketPrices.map((item: any) => ({
+//     month: item.month,
+//     crop1: item.crop1,
+//     crop2: item.crop2
+//   }))
+
+//   const listings = data.activeListingsData
+//   const orders = data.recentOrders
+
+//   const statusColors: any = {
+//     pending: "bg-yellow-200 text-yellow-800",
+//     processing: "bg-blue-200 text-blue-800",
+//     completed: "bg-green-200 text-green-800",
+//   }
+
+//   return (
+//     <div className="space-y-6">
+
+//       {/* HEADER */}
+//       <div className="flex justify-between">
+//         <div>
+//           <h1 className="text-3xl font-bold">Farmer Dashboard</h1>
+//         </div>
+
+//         <div className="flex gap-2">
+//           <Button asChild>
+//             <Link href="/farmer/listings">
+//               <Plus className="size-4 mr-2" />
+//               Add Listing
+//             </Link>
+//           </Button>
+
+//           <LogoutButton />
+//         </div>
+//       </div>
+
+//       {/* KPI */}
+//       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+//         <KPICard title="Total Revenue" value={`₹${data.totalRevenue}`} icon={<IndianRupee />} />
+//         <KPICard title="Active Listings" value={data.activeListings} icon={<Sprout />} />
+//         <KPICard title="Pending Orders" value={data.pendingOrders} icon={<Package />} />
+//         <KPICard title="Avg Price/kg" value={`₹${data.avgPrice}`} icon={<TrendingUp />} />
+
+//       </div>
+
+//       {/* CHARTS */}
+//       <div className="grid gap-6 lg:grid-cols-2">
+
+//         {/* Revenue */}
+//         <Card>
+//           <CardHeader>
+//             <CardTitle>Revenue Overview</CardTitle>
+//           </CardHeader>
+
+//           <CardContent>
+//             <ChartContainer config={chartConfig}>
+//               <AreaChart data={revenueData}>
+//                 <CartesianGrid strokeDasharray="3 3" />
+//                 <XAxis dataKey="month" />
+//                 <YAxis />
+//                 <ChartTooltip content={<ChartTooltipContent />} />
+//                 <Area dataKey="revenue" stroke="green" fillOpacity={0.2} />
+//               </AreaChart>
+//             </ChartContainer>
+//           </CardContent>
+//         </Card>
+
+//         {/* Market */}
+//         <Card>
+//           <CardHeader>
+//             <CardTitle>Market Prices</CardTitle>
+//           </CardHeader>
+
+//           <CardContent>
+//             <ChartContainer config={chartConfig}>
+//               <LineChart data={marketPrices}>
+//                 <CartesianGrid strokeDasharray="3 3" />
+//                 <XAxis dataKey="month" />
+//                 <YAxis />
+//                 <ChartTooltip content={<ChartTooltipContent />} />
+//                 <Line dataKey="crop1" stroke="green" />
+//                 <Line dataKey="crop2" stroke="orange" />
+//               </LineChart>
+//             </ChartContainer>
+//           </CardContent>
+//         </Card>
+
+//       </div>
+
+//       {/* LISTINGS */}
+//       <Card>
+//         <CardHeader>
+//           <CardTitle>Active Listings</CardTitle>
+//         </CardHeader>
+
+//         <CardContent className="grid gap-4 md:grid-cols-3">
+
+//           {listings.map((l: any, i: number) => (
+//             <div key={i} className="border p-4 rounded">
+
+//               <h3 className="font-semibold">{l.cropName}</h3>
+//               <p>{l.quantity} kg</p>
+
+//               <p className="font-bold">₹{l.price}</p>
+
+//               <div className="flex justify-between text-sm mt-2">
+//                 <span className="flex items-center gap-1">
+//                   <Eye size={14}/> {l.views}
+//                 </span>
+//                 <span>{l.offers} offers</span>
+//               </div>
+
+//             </div>
+//           ))}
+
+//         </CardContent>
+//       </Card>
+
+//       {/* ORDERS */}
+//       <Card>
+//         <CardHeader>
+//           <CardTitle>Recent Orders</CardTitle>
+//         </CardHeader>
+
+//         <CardContent className="space-y-4">
+
+//           {orders.map((o: any, i: number) => (
+//             <div key={i} className="flex justify-between border p-4 rounded">
+
+//               <div>
+//                 <p className="font-medium">{o.buyerName}</p>
+//                 <p className="text-sm">
+//                   {o.cropName} • {o.quantity} kg
+//                 </p>
+//               </div>
+
+//               <div className="text-right">
+//                 <Badge className={statusColors[o.status]}>
+//                   {o.status}
+//                 </Badge>
+//                 <p className="font-semibold">₹{o.total}</p>
+//               </div>
+
+//             </div>
+//           ))}
+
+//         </CardContent>
+//       </Card>
+
+//     </div>
+//   )
+// }

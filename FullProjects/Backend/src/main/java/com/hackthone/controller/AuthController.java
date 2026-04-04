@@ -1,5 +1,9 @@
 package com.hackthone.controller;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,11 +27,10 @@ public class AuthController {
 
     // ================= REGISTER =================
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(
+    public ResponseEntity<?> register(
             @Valid @RequestBody RegistrationRequest request) {
 
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.register(request));
     }
 
     // ================= LOGIN =================

@@ -1,14 +1,16 @@
 package com.hackthone.payload.requestDTO;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class LoginRequest {
-		
-		@NotBlank(message = "email and passwrod is mandatory")
-	    private String email;
 
-		@NotBlank(message = "email and passwrod is mandatory")
-	    private String password;
-	}
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
+}

@@ -123,30 +123,77 @@ function RegisterForm() {
       setStep(2)
     }
   }
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError("")
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
-
-    if (!agreed) {
-      setError("Please accept the terms and conditions")
-      return
-    }
-
-    setIsLoading(true)
-
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    setRole(selectedRole)
-    setIsAuthenticated(true)
-    router.push(`/${selectedRole}`)
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match")
+    return
   }
 
+  if (!agreed) {
+    setError("Please accept the terms and conditions")
+    return
+  }
+
+  setIsLoading(true)
+console.log("RAW PHONE:", formData.phone)
+console.log("TYPE:", typeof formData.phone)
+console.log("LENGTH:", formData.phone.length)
+  try {
+    const response = await fetch("http://localhost:7000/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone.replace(/\D/g, "").slice(0, 10),
+        password: formData.password,
+        state: formData.state,
+        district: formData.district,
+        aadhaar: formData.aadhaar || null,
+        role: selectedRole.toUpperCase() // 🔥 IMPORTANT
+      })
+    })
+
+ const data = await response.json()
+
+if (!response.ok) {
+
+  //  1. Field validation errors (Spring Boot)
+ // direct map handle karo
+if (typeof data === "object") {
+  const firstError = Object.values(data)[0]
+  throw new Error(firstError as string)
+}
+
+  //  2. Custom backend message
+  if (data.message) {
+    throw new Error(data.message)
+    console.log("BACKEND ERROR MESSAGE:", data.message)
+  }
+ console.log(data.message);
+  //  fallback
+  throw new Error("Registration failed")
+}
+    //  Zustand store me save karo
+    setRole(selectedRole)
+    setIsAuthenticated(true)
+
+    //  token save karo
+    localStorage.setItem("token", data.token)
+
+    router.push(`/${selectedRole}`)
+
+  } catch (err: any) {
+    setError(err.message)
+  } finally {
+    setIsLoading(false)
+  }
+}
   const selectedRoleData = roles.find(r => r.id === selectedRole)!
 
   return (

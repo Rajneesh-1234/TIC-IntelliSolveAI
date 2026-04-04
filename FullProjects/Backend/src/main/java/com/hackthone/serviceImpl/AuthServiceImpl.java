@@ -1,8 +1,5 @@
 package com.hackthone.serviceImpl;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,42 +37,44 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already registered");
         }
 
-        // 2. Role validation (SECURITY)
-        if (request.getRole() == UserRole.GOVERMENT) {
-            throw new RuntimeException("Government role not allowed");
-        }
-
+   
         // 3. Map user
         User user = UserMapper.toEntity(request);
 
-        // 🔥 DEFAULT ROLE (safe approach)
-        user.setUserRole(UserRole.USER);
+        // ✅ FIX: correct role setter
+        user.setRole(request.getRole().name());
 
         // 4. Encode password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // 5. Email verified (OTP removed)
-        user.setEmailVerified(true);
+//        // 5. Email verified (optional)
+//        user.setEmailVerified(true);
 
         // 6. Save to DB
         userRepository.save(user);
 
-        // 7. Generate JWT
+        // 7. Create authentication WITH authorities (IMPORTANT 🔥)
+        UserDetails userDetails =
+                customUserImplementation.loadUserByUsername(user.getEmail());
+
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(
-                        user.getEmail(),
-                        user.getPassword()
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
                 );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
         String token = jwtProvider.generateToken(authentication);
 
         return AuthResponse.builder()
                 .token(token)
-                .user(UserMapper.toResponse(user))
+                .user(UserMapper.toDTO(user)) // ✅ FIX
                 .message("User registered successfully")
                 .build();
     }
+
     // ================= AUTHENTICATE =================
     private Authentication authenticate(String email, String password) {
 
@@ -91,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         return new UsernamePasswordAuthenticationToken(
-                email,
+                userDetails,
                 null,
                 userDetails.getAuthorities()
         );
@@ -113,17 +112,17 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("User not found");
         }
 
-        user.setLastLogin(LocalDateTime.now());
+//        user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
 
         return AuthResponse.builder()
                 .token(token)
-                .user(UserMapper.toResponse(user))
+                .user(UserMapper.toDTO(user)) // ✅ FIX
                 .message("Login successful")
                 .build();
     }
 
-    // ❌ OTP method remove kar diya ya optional bana sakta hai
+    // ================= OTP (DISABLED) =================
     @Override
     public AuthResponse verifyOtp(String email, String otp) {
         throw new UnsupportedOperationException("OTP verification is disabled");

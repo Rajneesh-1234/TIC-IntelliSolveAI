@@ -1,7 +1,7 @@
 package com.hackthone.domain;
 
 public enum UserRole {
-      USER,
+	 FARMER,
       SELLER,
-      GOVERMENT
+      GOVERNMENT
 }

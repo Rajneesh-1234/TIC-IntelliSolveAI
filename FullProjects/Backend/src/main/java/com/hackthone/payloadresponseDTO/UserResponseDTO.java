@@ -1,12 +1,17 @@
 package com.hackthone.payloadresponseDTO;
-
-import lombok.Data;
+import lombok.*;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class UserResponseDTO {
-    Long userId;
-    String fullName;
-    String email;
-    String message;
-    // getters/setters...
+
+    private Long userId;
+    private String fullName;
+    private String email;
+    private String phone;
+    private String state;
+    private String district;
+    private String role;
 }

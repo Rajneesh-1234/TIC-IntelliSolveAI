@@ -82,23 +82,54 @@ function LoginForm() {
       setSelectedRole(roleParam)
     }
   }, [searchParams])
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setError("")
+  setIsLoading(true)
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+  try {
+    const response = await fetch("http://localhost:7000/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    })
 
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const data = await response.json()
 
-    if (email && password) {
-      setRole(selectedRole)
-      setIsAuthenticated(true)
-      router.push(`/${selectedRole}`)
-    } else {
-      setError("Please enter valid credentials")
-      setIsLoading(false)
+    console.log("LOGIN RESPONSE:", data) // 🔥 sabse important
+
+    if (!response.ok) {
+      throw new Error(data.message || "Login failed")
     }
+
+    // ✅ token save
+    localStorage.setItem("token", data.token)
+
+    // ✅ role safely nikalo
+    const role = data.role || data.user?.role
+
+    if (!role) {
+      throw new Error("Role not found in response")
+    }
+
+    // ✅ Zustand update
+    setIsAuthenticated(true)
+    setRole(role.toLowerCase())
+
+    // ✅ redirect
+    router.push(`/${role.toLowerCase()}`)
+
+  } catch (err: any) {
+    setError(err.message)
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const selectedRoleData = roles.find(r => r.id === selectedRole)!
 
